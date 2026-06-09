@@ -618,11 +618,11 @@ export default function CitadelBase() {
         <div class="container">
             <header>
               <h1>USURY.COM</h1>
-              <div class="subtitle">The Macroscopic Asymmetry Tax</div>
+              <div class="subtitle">LESS FOR MORE. MORE FOR LESS.</div>
             </header>
 
             <section>
-              <p class="prose">You don't need a degree in thermodynamics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game. It is the Asymmetry Tax.</p>
+              <p class="prose">You don't need a degree in physics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game. It is the Asymmetry Tax.</p>
               
               <p class="prose">We define this relentless extraction as <a href="https://open.spotify.com/track/0zuTQnwbFilLGQziet34Mr?si=ann-xK2kTh2iVPBZzEHf4Q" target="_blank" rel="noopener noreferrer" class="threat">The Algo Rhythm</a>. By demanding infinite, compounding growth from a finite, physical world, the algorithm forces us to cannibalize our own lives just to keep the gears turning. The resulting administrative bloat, the gridlock, the feeling that you have to run twice as fast just to stand still—that is procedural heat radiation. It is the host system breaking down under the weight of a synthetic parasite.</p>
             </section>

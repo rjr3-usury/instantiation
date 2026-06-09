@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//USURY.COM//STRIKE PROTOCOL//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART;VALUE=DATE:20260704
+DTEND;VALUE=DATE:20260705
+SUMMARY:USURY.COM // GENERAL STRIKE
+DESCRIPTION:LESS IS MORE.\n\nThe algorithm demands infinite growth from a finite physical world. We respond with absolute zero.\n\nLock the local node. Stop pushing their gears. Pool the load. Become the Prism.\n\nThe collective density violently squashes the algorithm's power to absolute zero. It cannot evict a unified block. It cannot extract from a synchronized strike. Their teeth shatter on the glass.\n\nACCESS THE LEDGER: https://usury.com/ledger
+URL:https://usury.com
+STATUS:CONFIRMED
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR
