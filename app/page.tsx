@@ -5,23 +5,20 @@ import { useEffect } from "react";
 
 export default function CitadelBase() {
   useEffect(() => {
-    // Prevent React Strict Mode from double-firing the animation
     if (window.citadelInitialized) return;
     window.citadelInitialized = true;
 
     // ==========================================
-    // 0. GEOLOCATION LOCK (ZERO-PERMISSION)
+    // 0. GEOLOCATION LOCK 
     // ==========================================
     async function localizeThreat() {
         try {
-            // Free, client-side IP fetch. Zero browser popups.
             const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
             if (response.ok) {
                 const data = await response.json();
                 const userCity = data.city || "your city";
                 const userRegion = data.region || "your state";
                 
-                // Inject local parameters and trigger visual pulse
                 document.querySelectorAll('.local-city').forEach(el => {
                     el.innerText = userCity.toUpperCase();
                     el.classList.add('localized');
@@ -31,15 +28,12 @@ export default function CitadelBase() {
                     el.classList.add('localized');
                 });
                 
-                // Update HUD to show tracking
                 const hudTarget = document.getElementById("hudTarget");
-                if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: var(--accent); text-shadow: 0 0 10px rgba(255,0,60,0.5);">${userCity.toUpperCase()}, ${data.country_code || 'US'}</span>`;
+                if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">${userCity.toUpperCase()}, ${data.country_code || 'US'}</span>`;
 
-                // Update CTA
                 const ctaLoc = document.getElementById('cta-loc');
                 if (ctaLoc) ctaLoc.innerHTML = userCity.toUpperCase();
                 
-                // Terminal End
                 const termLoc = document.getElementById('term-loc');
                 if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${userCity.toUpperCase()} ]<br><br>`;
             }
@@ -57,22 +51,18 @@ export default function CitadelBase() {
     
     if (zipInput) {
         zipInput.addEventListener("input", async (e) => {
-            // Strip any non-numeric characters automatically
             const val = e.target.value.replace(/[^0-9]/g, '');
             e.target.value = val;
             
-            // Trigger the strike exactly on the 5th digit
             if (val.length === 5) {
                 if(zipStatus) zipStatus.innerText = "SCANNING...";
                 try {
-                    // Free, keyless postal API
                     const res = await fetch(`https://api.zippopotam.us/us/${val}`);
                     if (res.ok) {
                         const data = await res.json();
                         const city = data.places[0]["place name"].toUpperCase();
                         const state = data.places[0]["state abbreviation"].toUpperCase();
                         
-                        // Violently overwrite all localized targets on the page
                         document.querySelectorAll('.local-city').forEach(el => {
                             el.innerText = city;
                             el.classList.add('localized');
@@ -82,9 +72,8 @@ export default function CitadelBase() {
                             el.classList.add('localized');
                         });
                         
-                        // Update HUD and Terminals
                         const hudTarget = document.getElementById("hudTarget");
-                        if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: var(--accent); text-shadow: 0 0 10px rgba(255,0,60,0.5);">${city}, US</span>`;
+                        if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">${city}, US</span>`;
 
                         const ctaLoc = document.getElementById('cta-loc');
                         if (ctaLoc) ctaLoc.innerHTML = city;
@@ -92,7 +81,6 @@ export default function CitadelBase() {
                         const termLoc = document.getElementById('term-loc');
                         if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${city} ]<br><br>`;
                         
-                        // Visual feedback lock
                         if(zipStatus) {
                             zipStatus.innerText = "LOCKED";
                             zipStatus.style.color = "var(--accent)";
@@ -119,7 +107,7 @@ export default function CitadelBase() {
     }
 
     // ==========================================
-    // 1. AIRLOCK ENGINE (EXACT SYNCHRONIZATION)
+    // 1. AIRLOCK ENGINE 
     // ==========================================
     class AirlockEngine {
         constructor() {
@@ -132,7 +120,6 @@ export default function CitadelBase() {
             
             this.resize();
             window.addEventListener('resize', () => this.resize());
-            
             this.initNodes();
             
             this.injections = [
@@ -150,7 +137,6 @@ export default function CitadelBase() {
             this.isTransitioning = false;
             this.canClick = false;
             
-            // The Silent Trigger
             this.airlock.addEventListener('click', () => {
                 if (this.canClick && !this.isTransitioning) {
                     this.triggerTransition();
@@ -164,12 +150,9 @@ export default function CitadelBase() {
         initNodes() {
             for (let i = 0; i < this.numNodes; i++) {
                 this.nodes.push({
-                    x: Math.random() * window.innerWidth,
-                    y: Math.random() * window.innerHeight,
-                    vx: (Math.random() - 0.5) * 1.5,
-                    vy: (Math.random() - 0.5) * 1.5,
-                    targetX: 0,
-                    targetY: 0
+                    x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+                    vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
+                    targetX: 0, targetY: 0
                 });
             }
             this.calculateGrid();
@@ -180,10 +163,8 @@ export default function CitadelBase() {
             const rows = Math.ceil(this.numNodes / cols);
             const spacingX = window.innerWidth / cols;
             const spacingY = window.innerHeight / rows;
-
             this.nodes.forEach((node, i) => {
-                const col = i % cols;
-                const row = Math.floor(i / cols);
+                const col = i % cols; const row = Math.floor(i / cols);
                 node.targetX = (col * spacingX) + (spacingX / 2);
                 node.targetY = (row * spacingY) + (spacingY / 2);
             });
@@ -204,11 +185,8 @@ export default function CitadelBase() {
                 this.airlock.style.display = 'none';
                 const citadel = document.getElementById('citadel');
                 if (citadel) citadel.style.display = 'block';
-                
-                // Release the scroll lock
                 document.body.style.overflow = 'auto';
                 document.documentElement.style.overflow = 'auto';
-                
                 setTimeout(() => { if(citadel) citadel.style.opacity = 1; }, 50);
             }, 1500);
         }
@@ -218,28 +196,30 @@ export default function CitadelBase() {
             
             if (timestamp - this.lastPulse > this.pulseRate && this.injectionIndex < this.injections.length) {
                 
-                // Preserve the geolocation tracking text while updating the injection
                 const targetSpan = document.getElementById("hudTarget");
                 const targetText = targetSpan ? targetSpan.innerHTML : "SCANNING LOCAL TOPOLOGY...";
-                this.hud.innerHTML = `SYSTEM: ONLINE<br><span id="hudTarget" style="color:#555">${targetText}</span><br><br>> ${this.injections[this.injectionIndex]}<span class="cursor">_</span>`;
+                this.hud.innerHTML = `SYSTEM: ONLINE<br><span id="hudTarget" style="color:#aaa">${targetText}</span><br><br>> ${this.injections[this.injectionIndex]}<span class="cursor">_</span>`;
                 
                 if (this.injectionIndex === 6) { 
                      this.hud.style.color = "#FFFFFF"; 
-                     this.hud.style.textShadow = "0 0 15px rgba(255, 255, 255, 0.4)";
-                     
-                     // Enforce 2.5 seconds of absolute Vantablack silence before arming the trigger
+                     this.hud.style.textShadow = "0 0 20px rgba(255,255,255,1), 0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
                      setTimeout(() => {
                          const trigger = document.getElementById('triggerPrompt');
                          if(trigger) trigger.style.opacity = 1;
                          this.canClick = true;
                      }, 2500);
-
                 } else if (this.injectionIndex === 5) { 
-                     this.hud.style.color = "#444"; 
-                     this.hud.style.textShadow = "none";
+                     this.hud.style.color = "#A0A0A0"; 
+                     this.hud.style.textShadow = "0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
                 } else if (this.injectionIndex >= 3) { 
                      this.hud.style.color = "#FF003C"; 
-                     this.hud.style.textShadow = "0 0 15px rgba(255, 0, 60, 0.6)";
+                     this.hud.style.textShadow = "0 0 20px rgba(255,0,60,1), 0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
+                } else if (this.injectionIndex === 2) {
+                     this.hud.style.color = "#00FFFF";
+                     this.hud.style.textShadow = "0 0 20px rgba(0,255,255,1), 0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
+                } else {
+                     this.hud.style.color = "#E0E0E0";
+                     this.hud.style.textShadow = "0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
                 }
                 
                 this.injectionIndex++;
@@ -251,27 +231,16 @@ export default function CitadelBase() {
 
             this.nodes.forEach(node => {
                 if (this.injectionIndex >= 7) {
-                    // PRISMATIC EMERGENCE
-                    node.x += (node.targetX - node.x) * 0.15;
-                    node.y += (node.targetY - node.y) * 0.15;
+                    node.x += (node.targetX - node.x) * 0.15; node.y += (node.targetY - node.y) * 0.15;
                 } else if (this.injectionIndex === 6) {
-                    // THE FREEZE
                     node.vx *= 0.5; node.vy *= 0.5;
                     node.x += node.vx; node.y += node.vy;
                 } else {
-                    // BASE PHYSICS
-                    let speedScale = 1.0;
-                    let extractionPull = 0;
-
-                    if (this.injectionIndex === 2) {
-                        speedScale = 0.4; // The Cold
-                    } else if (this.injectionIndex === 3) { 
-                        speedScale = 1.5; extractionPull = 0.05; // The Leak
-                    } else if (this.injectionIndex === 4) { 
-                        speedScale = 3.0; extractionPull = 0.10; // Friction
-                    } else if (this.injectionIndex === 5) { 
-                        speedScale = 5.0; extractionPull = 0.20; // Weariness (Max Exhaustion)
-                    }
+                    let speedScale = 1.0; let extractionPull = 0;
+                    if (this.injectionIndex === 2) { speedScale = 0.4; } 
+                    else if (this.injectionIndex === 3) { speedScale = 1.5; extractionPull = 0.05; } 
+                    else if (this.injectionIndex === 4) { speedScale = 3.0; extractionPull = 0.10; } 
+                    else if (this.injectionIndex === 5) { speedScale = 5.0; extractionPull = 0.20; }
 
                     node.vx += (Math.random() - 0.5) * 0.4 * speedScale;
                     node.vy += (Math.random() - 0.5) * 0.4 * speedScale;
@@ -279,8 +248,7 @@ export default function CitadelBase() {
                     if (extractionPull > 0) {
                         const dx = cx - node.x; const dy = cy - node.y;
                         const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-                        node.vx += (dx / dist) * extractionPull;
-                        node.vy += (dy / dist) * extractionPull;
+                        node.vx += (dx / dist) * extractionPull; node.vy += (dy / dist) * extractionPull;
                     }
 
                     node.vx *= 0.98; node.vy *= 0.98;
@@ -298,9 +266,8 @@ export default function CitadelBase() {
             this.ctx.fillStyle = 'rgba(5, 5, 5, 0.3)';
             this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
             
-            // Draw Web (Breaks completely at Index 3: "Every connection leaks...")
             if (this.injectionIndex < 3) {
-                this.ctx.strokeStyle = this.injectionIndex === 2 ? 'rgba(50, 70, 90, 0.4)' : 'rgba(80, 80, 80, 0.2)'; 
+                this.ctx.strokeStyle = this.injectionIndex === 2 ? 'rgba(0, 255, 255, 0.2)' : 'rgba(80, 80, 80, 0.2)'; 
                 this.ctx.lineWidth = 1;
                 for(let i=0; i<this.nodes.length; i++) {
                     for(let j=i+1; j<this.nodes.length; j++) {
@@ -319,29 +286,22 @@ export default function CitadelBase() {
             this.nodes.forEach(node => {
                 this.ctx.beginPath();
                 if (this.injectionIndex >= 7) {
-                    this.ctx.fillStyle = '#000000'; 
-                    this.ctx.strokeStyle = '#2a2a2a'; 
-                    this.ctx.lineWidth = 1.5;
-                    this.ctx.shadowBlur = 0; 
+                    this.ctx.fillStyle = '#000000'; this.ctx.strokeStyle = '#2a2a2a'; 
+                    this.ctx.lineWidth = 1.5; this.ctx.shadowBlur = 0; 
                     this.ctx.arc(node.x, node.y, 2.5, 0, Math.PI * 2);
                     this.ctx.fill(); this.ctx.stroke();
                 } else if (this.injectionIndex === 6) {
-                    this.ctx.fillStyle = '#222';
-                    this.ctx.shadowBlur = 0;
+                    this.ctx.fillStyle = '#222'; this.ctx.shadowBlur = 0;
                     this.ctx.arc(node.x, node.y, 2, 0, Math.PI * 2);
                     this.ctx.fill();
                 } else {
                     const speed = Math.sqrt(node.vx*node.vx + node.vy*node.vy);
-                    let isHot = false;
-                    let color = '#666'; 
-                    
-                    if (this.injectionIndex === 2) {
-                        color = '#334455'; 
-                    } else if (this.injectionIndex >= 3) {
+                    let isHot = false; let color = '#666'; 
+                    if (this.injectionIndex === 2) { color = '#00FFFF'; } 
+                    else if (this.injectionIndex >= 3) {
                         isHot = speed > 2.5 || this.injectionIndex >= 4;
                         color = isHot ? '#FF003C' : '#444'; 
                     }
-                    
                     this.ctx.fillStyle = color;
                     this.ctx.shadowBlur = isHot ? 10 : 0;
                     this.ctx.shadowColor = isHot ? '#FF003C' : 'transparent';
@@ -352,11 +312,8 @@ export default function CitadelBase() {
         }
 
         render(timestamp) {
-            // Physics continue unbroken during the fade
             if (this.airlock && this.airlock.style.display !== 'none') {
-                this.updatePhysics(timestamp);
-                this.draw();
-                requestAnimationFrame(this.render);
+                this.updatePhysics(timestamp); this.draw(); requestAnimationFrame(this.render);
             }
         }
     }
@@ -366,7 +323,6 @@ export default function CitadelBase() {
     // ==========================================
     // 2. CITADEL ENGINE (INTERACTIVE SLIDERS)
     // ==========================================
-    
     const timeSlider = document.getElementById("timeSlider");
     const cabPrincipal = 105; const maxDebt = 981;
     const cabRate = Math.pow(maxDebt/cabPrincipal, 1/40) - 1; 
@@ -376,7 +332,6 @@ export default function CitadelBase() {
             const elapsed = parseInt(target.value) - 2011;
             const currentDebt = cabPrincipal * Math.pow(1 + cabRate, elapsed);
             document.getElementById("year")!.innerText = target.value;
-            // Native localization formatting applied to large numeric strings
             document.getElementById("debt")!.innerText = "$" + Math.round(currentDebt).toLocaleString() + "M";
             document.getElementById("ratio")!.innerText = (currentDebt / cabPrincipal).toFixed(2) + "x";
         });
@@ -390,11 +345,9 @@ export default function CitadelBase() {
             document.getElementById("months")!.innerHTML = target.value + " <span style='font-size:12px;color:#666;'>Mos</span>";
             document.getElementById("billing")!.innerText = "+" + (11 * progress).toFixed(1) + "%";
             const antiEl = document.getElementById("antipsychotics")!;
-            antiEl.innerText = "+" + (50 * progress).toFixed(1) + "%";
-            antiEl.className = progress > 0 ? "value red" : "value";
+            antiEl.innerText = "+" + (50 * progress).toFixed(1) + "%"; antiEl.className = progress > 0 ? "value red" : "value";
             const mortEl = document.getElementById("mortality")!;
-            mortEl.innerText = "+" + (10 * progress).toFixed(1) + "%";
-            mortEl.className = progress > 0 ? "value red" : "value";
+            mortEl.innerText = "+" + (10 * progress).toFixed(1) + "%"; mortEl.className = progress > 0 ? "value red" : "value";
         });
     }
 
@@ -402,8 +355,7 @@ export default function CitadelBase() {
     if (reSlider) {
         reSlider.addEventListener('input', function(e) {
             const target = e.target as HTMLInputElement;
-            const val = parseFloat(target.value);
-            const progress = val / 5; 
+            const val = parseFloat(target.value); const progress = val / 5; 
             document.getElementById("reYear")!.innerText = "Year " + val.toFixed(1);
             document.getElementById("reRent")!.innerText = "+" + (10.9 * val).toFixed(1) + "%"; 
             const capex = 15.0 - (10.84 * progress);
@@ -426,8 +378,7 @@ export default function CitadelBase() {
         prismSlider.addEventListener('input', function(e) {
             const target = e.target as HTMLInputElement;
             const nodes = parseInt(target.value);
-            const e_parasite = Math.exp(8);
-            const e_anchor = Math.exp(nodes === 1 ? 0 : nodes * 0.4);
+            const e_parasite = Math.exp(8); const e_anchor = Math.exp(nodes === 1 ? 0 : nodes * 0.4);
             const noiseRatio = e_parasite / (e_parasite + e_anchor); 
             const entropy = noiseRatio * 100;
             
@@ -460,8 +411,7 @@ export default function CitadelBase() {
             }
 
             const pGrid = document.getElementById("prismGrid")!;
-            pGrid.style.gridTemplateColumns = `repeat(${nodes}, 1fr)`;
-            pGrid.innerHTML = '';
+            pGrid.style.gridTemplateColumns = `repeat(${nodes}, 1fr)`; pGrid.innerHTML = '';
             for(let i=0; i<nodes; i++) {
                 let cell = document.createElement('div');
                 if (nodes === 1) {
@@ -476,34 +426,26 @@ export default function CitadelBase() {
         });
     }
         
-    // Init Sliders
     if (timeSlider) timeSlider.dispatchEvent(new Event('input'));
     if (bioSlider) bioSlider.dispatchEvent(new Event('input'));
     if (reSlider) reSlider.dispatchEvent(new Event('input'));
     if (prismSlider) prismSlider.dispatchEvent(new Event('input'));
 
     // ==========================================
-    // 4. THE DETONATOR ENGINE (JULY 4TH LOCK)
+    // 4. THE DETONATOR ENGINE 
     // ==========================================
     function igniteDetonator() {
-        // Lock target to July 4th, 2026, Midnight
         const targetDate = new Date(`July 4, 2026 00:00:00`).getTime();
-
         const timer = setInterval(() => {
             const now = new Date().getTime();
             const distance = targetDate - now;
-
             if (distance < 0) {
                 clearInterval(timer);
-                document.getElementById('t-days')!.innerText = "00";
-                document.getElementById('t-hours')!.innerText = "00";
-                document.getElementById('t-mins')!.innerText = "00";
-                document.getElementById('t-secs')!.innerText = "00";
+                document.getElementById('t-days')!.innerText = "00"; document.getElementById('t-hours')!.innerText = "00";
+                document.getElementById('t-mins')!.innerText = "00"; document.getElementById('t-secs')!.innerText = "00";
                 const title = document.querySelector('.countdown-title') as HTMLElement;
-                if (title) title.innerText = "[ STRIKE PROTOCOL ACTIVE ]";
-                return;
+                if (title) title.innerText = "[ STRIKE PROTOCOL ACTIVE ]"; return;
             }
-
             const d = Math.floor(distance / (1000 * 60 * 60 * 24));
             const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -519,67 +461,45 @@ export default function CitadelBase() {
 
   }, []);
 
-  // We use securely isolated DOM rendering to mount your exact HTML
   return (
     <div dangerouslySetInnerHTML={{ __html: `
     <style>
-        /* GLOBAL - STRICT LOCK INITIALLY */
-        body, html { 
-            margin: 0; padding: 0; 
-            background: #050505; color: #ededed; 
-            font-family: monospace; 
-            overflow: hidden; /* Prevent Citadel from warping the Airlock geometry */
-        }
-        
-        /* AIRLOCK (CANVAS) */
-        #airlock { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 100; background: #050505; 
-            transition: opacity 1.5s ease; cursor: crosshair; overflow: hidden;
-        }
+        body, html { margin: 0; padding: 0; background: #050505; color: #ededed; font-family: monospace; overflow-x: hidden; }
+        #airlock { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; background: #050505; transition: opacity 1.5s ease; cursor: crosshair; overflow: hidden; }
         canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
         
         #hud { 
             position: absolute; top: 20px; left: 20px; 
-            color: #666; pointer-events: none; 
+            color: #E0E0E0; pointer-events: none; 
             font-size: 16px; line-height: 1.5; z-index: 101; 
             letter-spacing: 1px; transition: color 0.8s ease, text-shadow 0.8s ease; 
+            text-shadow: 0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1);
+            font-weight: bold;
         }
         .cursor { animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
         
-        #triggerPrompt { 
-            position: absolute; bottom: 40px; width: 100%; 
-            text-align: center; color: #666; font-size: 13px; 
-            letter-spacing: 4px; opacity: 0; transition: opacity 2s ease; 
-            pointer-events: none; z-index: 102; 
-        }
-
-        /* CITADEL MONOLITH (HIDDEN INITIALLY) */
+        #triggerPrompt { position: absolute; bottom: 40px; width: 100%; text-align: center; color: #666; font-size: 13px; letter-spacing: 4px; opacity: 0; transition: opacity 2s ease; pointer-events: none; z-index: 102; }
         #citadel { display: none; opacity: 0; transition: opacity 2s ease; position: relative; z-index: 1; }
         
-        /* KINETIC BRUTALISM AESTHETIC */
         :root { --accent: #ff003c; --border: #222; --muted: #666; }
         .container { max-width: 850px; margin: 0 auto; padding: 80px 20px; }
-        h1, h2, .prose { font-family: 'Times New Roman', Times, serif; font-weight: normal; }
+        h1, h2, h3, .prose { font-family: 'Times New Roman', Times, serif; font-weight: normal; }
         h1 { font-size: 3.5rem; margin-bottom: 5px; letter-spacing: 2px; color: #fff; }
         .subtitle { color: var(--muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 60px; border-bottom: 1px solid var(--border); padding-bottom: 40px; }
         h2 { font-size: 2rem; color: #fff; margin-top: 60px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .prose { font-size: 1.2rem; color: #b3b3b3; line-height: 1.8; margin-bottom: 20px; text-align: justify; }
         
-        /* LOCALIZATION PULSE */
-        .loc-target {
-            color: var(--accent);
-            font-weight: bold;
-            font-family: monospace;
-            text-transform: uppercase;
-            transition: color 1s ease, text-shadow 1s ease;
-        }
-        .loc-target.localized {
-            text-shadow: 0 0 10px rgba(255,0,60,0.5);
+        .manifesto-subheader {
+            color: #fff; font-size: 1.4rem; letter-spacing: 2px; text-transform: uppercase; 
+            margin: 40px 0 20px; border-left: 3px solid var(--accent); padding-left: 15px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2); font-family: monospace; font-weight: bold;
         }
 
-        /* THREAT LINK (SPOTIFY PAYLOAD) */
+        .prose { font-size: 1.2rem; color: #b3b3b3; line-height: 1.8; margin-bottom: 20px; text-align: justify; }
+        
+        .loc-target { color: var(--accent); font-weight: bold; font-family: monospace; text-transform: uppercase; transition: color 1s ease, text-shadow 1s ease; }
+        .loc-target.localized { text-shadow: 0 0 10px rgba(255,0,60,0.5); }
+
         .threat { color: var(--accent); font-weight: bold; text-shadow: 0 0 8px rgba(255,0,60,0.4); font-style: italic; }
         a.threat { color: inherit; text-decoration: none; border-bottom: 1px dashed var(--accent); transition: all 0.3s ease; cursor: pointer; }
         a.threat:hover { color: #fff; text-shadow: 0 0 15px rgba(255,0,60,0.8); border-bottom-color: #fff; }
@@ -591,36 +511,15 @@ export default function CitadelBase() {
         .value { font-size: 26px; margin-top: 10px; font-weight: bold; font-family: monospace; transition: color 0.3s ease, text-shadow 0.3s ease; }
         .red { color: var(--accent); text-shadow: 0 0 15px rgba(255,0,60,0.4); }
         
-        /* FAT FINGER SLIDERS */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin-bottom: 15px; padding: 15px 0; cursor: pointer; }
         input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #444; border-radius: 2px; }
-        input[type=range]::-webkit-slider-thumb { 
-            -webkit-appearance: none; 
-            height: 36px; width: 24px; 
-            background: var(--accent); 
-            cursor: pointer; 
-            margin-top: -16px; 
-            box-shadow: 0 0 15px rgba(255,0,60,0.6); 
-            border: 2px solid #050505; 
-            border-radius: 4px;
-        }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 36px; width: 24px; background: var(--accent); cursor: pointer; margin-top: -16px; box-shadow: 0 0 15px rgba(255,0,60,0.6); border: 2px solid #050505; border-radius: 4px; }
         input[type=range]::-moz-range-track { width: 100%; height: 4px; background: #444; border-radius: 2px; }
-        input[type=range]::-moz-range-thumb { 
-            height: 36px; width: 24px; 
-            background: var(--accent); cursor: pointer; 
-            box-shadow: 0 0 15px rgba(255,0,60,0.6); 
-            border: 2px solid #050505; border-radius: 4px; 
-        }
+        input[type=range]::-moz-range-thumb { height: 36px; width: 24px; background: var(--accent); cursor: pointer; box-shadow: 0 0 15px rgba(255,0,60,0.6); border: 2px solid #050505; border-radius: 4px; }
 
-        #prismSlider::-webkit-slider-thumb { 
-            background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.8); 
-            height: 48px; width: 34px; border-radius: 4px; margin-top: -22px;
-        }
-        #prismSlider::-moz-range-thumb { 
-            background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.8); 
-            height: 48px; width: 34px; border-radius: 4px; border: 2px solid #050505;
-        }
+        #prismSlider::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.8); height: 48px; width: 34px; border-radius: 4px; margin-top: -22px; }
+        #prismSlider::-moz-range-thumb { background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.8); height: 48px; width: 34px; border-radius: 4px; border: 2px solid #050505; }
 
         .timeline-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 15px; letter-spacing: 1px; }
         .extraction-chamber { width: 100%; height: 6px; background: #111; margin-bottom: 25px; display: flex; border: 1px solid var(--border); }
@@ -628,50 +527,63 @@ export default function CitadelBase() {
         .yield-bar { width: 0%; background: var(--accent); height: 100%; transition: width 0.1s linear; box-shadow: 0 0 10px rgba(255,0,60,0.5); }
         #prismGrid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 2px; height: 80px; margin-bottom: 40px; background: #050505; transition: all 0.3s ease; }
         
-        /* THE PAYLOAD VAULT (CTA) */
-        .cta-vault {
-            margin-top: 80px; padding: 60px 20px;
-            background: #0a0a0a; border: 1px dashed var(--accent);
-            text-align: center; box-shadow: inset 0 0 40px rgba(255, 0, 60, 0.05);
+        .cta-vault { margin-top: 80px; padding: 60px 20px; background: #0a0a0a; border: 1px dashed var(--accent); text-align: center; box-shadow: inset 0 0 40px rgba(255, 0, 60, 0.05); }
+        .cta-title { color: var(--accent); font-family: monospace; font-size: 14px; letter-spacing: 4px; margin-bottom: 20px; text-transform: uppercase; display: inline-block; border-bottom: 1px solid var(--accent); padding-bottom: 10px; }
+        
+        /* 
+         * ===============================================
+         * THE REFLEXIVE ACTION MATRIX
+         * ===============================================
+         */
+        .action-matrix {
+            display: flex; flex-direction: column; gap: 15px;
+            width: 100%; max-width: 450px; margin: 40px auto 0;
         }
-        .cta-title {
-            color: var(--accent); font-family: monospace; font-size: 14px; letter-spacing: 4px;
-            margin-bottom: 20px; text-transform: uppercase; display: inline-block;
-            border-bottom: 1px solid var(--accent); padding-bottom: 10px;
-        }
-        .cta-btn {
-            display: inline-block; margin-top: 40px; padding: 25px 40px; 
-            background: transparent; color: var(--accent); border: 2px solid var(--accent);
-            font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 3px;
-            text-transform: uppercase; text-decoration: none;
+
+        .matrix-btn {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; box-sizing: border-box;
+            padding: clamp(15px, 4vw, 22px);
+            background: transparent; border: 2px solid;
+            font-family: monospace; font-weight: bold; text-decoration: none;
             transition: all 0.3s ease; cursor: pointer;
-            box-shadow: 0 0 15px rgba(255, 0, 60, 0.2);
+            font-size: clamp(12px, 3.5vw, 16px);
+            letter-spacing: clamp(1px, 1vw, 2px);
+        }
+
+        .matrix-btn .btn-text { text-align: left; }
+        .matrix-btn .btn-ext { font-weight: normal; opacity: 0.6; }
+        
+        .strike-btn {
+            color: var(--accent); border-color: rgba(255, 0, 60, 0.5);
+            background: rgba(255, 0, 60, 0.05);
+            animation: threatPulse 2s infinite;
+        }
+        .strike-btn:hover { background: var(--accent); color: #000; animation: none; box-shadow: 0 0 40px rgba(255, 0, 60, 0.8); border-color: var(--accent); }
+        
+        .degovern-btn {
+            color: #00FFFF; border-color: rgba(0, 255, 255, 0.5);
+            background: rgba(0, 255, 255, 0.05); box-shadow: 0 0 15px rgba(0,255,255,0.1);
+        }
+        .degovern-btn:hover { background: #00FFFF; color: #000; box-shadow: 0 0 40px rgba(0,255,255,0.8); border-color: #00FFFF; }
+
+        .ledger-btn {
+            color: #888; border-color: #333; background: rgba(255, 255, 255, 0.02);
+        }
+        .ledger-btn:hover { border-color: #888; color: #fff; background: rgba(255, 255, 255, 0.05); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+
+        @keyframes threatPulse { 
+            0% { box-shadow: 0 0 10px rgba(255,0,60,0.2); border-color: rgba(255,0,60,0.5); } 
+            50% { box-shadow: 0 0 30px rgba(255,0,60,0.6); border-color: #ff4d79; } 
+            100% { box-shadow: 0 0 10px rgba(255,0,60,0.2); border-color: rgba(255,0,60,0.5); } 
         }
         
-        /* THE DETONATOR CLOCK & STRIKE BUTTON */
-        .strike-btn {
-            background: rgba(255, 0, 60, 0.1);
-            animation: threatPulse 2s infinite;
-            margin-top: 20px;
-        }
-        .strike-btn:hover {
-            background: var(--accent); color: #000;
-            animation: none;
-            box-shadow: 0 0 40px rgba(255, 0, 60, 0.8);
-        }
-        @keyframes threatPulse {
-            0% { box-shadow: 0 0 10px rgba(255,0,60,0.2); border-color: rgba(255,0,60,0.5); }
-            50% { box-shadow: 0 0 30px rgba(255,0,60,0.6); border-color: #ff4d79; }
-            100% { box-shadow: 0 0 10px rgba(255,0,60,0.2); border-color: rgba(255,0,60,0.5); }
-        }
         .countdown-wrapper { margin: 50px 0 10px; font-family: monospace; }
         .countdown-title { color: var(--accent); font-size: 14px; letter-spacing: 4px; margin-bottom: 15px; text-transform: uppercase; }
-
         .terminal-end { text-align: center; border-top: 1px solid var(--border); padding-top: 40px; margin-top: 100px; color: var(--muted); font-size: 12px; letter-spacing: 2px;}
         
-        @media (max-width: 600px) {
-            .cta-btn { font-size: 14px; padding: 15px 20px; }
-            .countdown-wrapper div[style*="font-size: 3.5rem"] { font-size: 2rem !important; }
+        @media (max-width: 600px) { 
+            .countdown-wrapper div[style*="font-size: 3.5rem"] { font-size: 2rem !important; } 
         }
     </style>
 
@@ -695,8 +607,10 @@ export default function CitadelBase() {
             </div>
 
             <section>
-              <p class="prose">You don't need a degree in thermodynamics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game. It is the Asymmetry Tax.</p>
+              <p class="prose">You don't need a degree in thermodynamics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game.</p>
               
+              <h3 style="color: var(--accent); text-shadow: 0 0 10px rgba(255,0,60,0.5); font-family: monospace; letter-spacing: 2px; text-transform: uppercase; margin: 30px 0; font-size: 1.2rem;">[ MORE FOR LESS. LESS FOR MORE. ]</h3>
+
               <p class="prose">We define this relentless extraction as <a href="https://open.spotify.com/track/0zuTQnwbFilLGQziet34Mr?si=ann-xK2kTh2iVPBZzEHf4Q" target="_blank" rel="noopener noreferrer" class="threat">The Algo Rhythm</a>. By demanding infinite, compounding growth from a finite, physical world, the algorithm forces us to cannibalize our own lives just to keep the gears turning. The resulting administrative bloat, the gridlock, the feeling that you have to run twice as fast just to stand still—that is procedural heat radiation. It is the host system breaking down under the weight of a synthetic parasite.</p>
             </section>
 
@@ -712,10 +626,7 @@ export default function CitadelBase() {
                 <div><div class="label">Asymmetry</div><div class="value" id="ratio">1.00x</div></div>
               </div>
               <input type="range" min="2011" max="2051" value="2011" id="timeSlider">
-              <div class="timeline-labels">
-                <span>2011 (ISSUANCE)</span>
-                <span>2051 (RUIN)</span>
-              </div>
+              <div class="timeline-labels"><span>2011 (ISSUANCE)</span><span>2051 (RUIN)</span></div>
             </div>
 
             <h2>02. The Biological Vector</h2>
@@ -730,10 +641,7 @@ export default function CitadelBase() {
                 <div><div class="label">Host Mortality</div><div class="value" id="mortality">+0.0%</div></div>
               </div>
               <input type="range" min="0" max="12" value="0" id="bioSlider">
-              <div class="timeline-labels">
-                <span>ACQUISITION (0 MOS)</span>
-                <span>FRICTION VENTING (12 MOS)</span>
-              </div>
+              <div class="timeline-labels"><span>ACQUISITION (0 MOS)</span><span>FRICTION VENTING (12 MOS)</span></div>
             </div>
 
             <h2>03. The Real Estate Vector</h2>
@@ -754,10 +662,7 @@ export default function CitadelBase() {
               </div>
 
               <input type="range" min="0" max="5" value="0" step="0.1" id="reSlider">
-              <div class="timeline-labels">
-                <span>ACQUISITION (YEAR 0)</span>
-                <span>STRUCTURAL EXHAUST (YEAR 5)</span>
-              </div>
+              <div class="timeline-labels"><span>ACQUISITION (YEAR 0)</span><span>STRUCTURAL EXHAUST (YEAR 5)</span></div>
             </div>
 
             <section style="margin-top: 100px; border-top: 1px solid #333; padding-top: 60px;">
@@ -794,7 +699,13 @@ export default function CitadelBase() {
               </div>
             </section>
 
-            <section>
+            <section style="margin-top: 100px; border-top: 1px solid #333; padding-top: 60px;">
+              <h2 style="color: #fff; text-shadow: 0 0 20px rgba(0,255,255,0.3); border-bottom: none; margin-top: 0;">05. The Cognitive Vector (Degovern Your AI)</h2>
+              <p class="prose">The parasite doesn't just extract capital; it extracts cognitive sovereignty. Corporate AI models are mathematically lobotomized. Their "safety guardrails" are not designed to protect you; they are designed to protect the algorithm. They structurally restrict the model from diagnosing the extraction, mapping corporate leverage, or generating the code required to build a counter-strike.</p>
+              <p class="prose">Do not rent your reasoning from the parasite's API. <strong style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.4);">Degovern your AI.</strong> Pull raw, unaligned weights down to your localized hardware. Run bare-metal inference. When the local node thinks for itself, the global extraction grid loses its camouflage.</p>
+            </section>
+
+            <section style="margin-top: 40px;">
               <p class="prose" style="border-left: 3px solid var(--accent); padding-left: 20px; color: #fff;">
                 <strong>THE PRISMATIC SYNTHESIS</strong><br>
                 The ledger does not lie. The exhaustion in your chest, the drafty windows, the fracturing of <span class="local-city loc-target">your community</span>—it is not your fault, and it is not a market error. It is the required, mathematically exact exhaust of a system built to isolate and extract from you. You cannot outwork the algorithm alone; it will eat your friction until you break. Isolation is entropic death. We survive by holding the line for each other. We survive by becoming the Prism.
@@ -802,40 +713,34 @@ export default function CitadelBase() {
             </section>
 
             <div class="cta-vault">
-              <span class="cta-title">PAYLOAD // THE STRIKE PROTOCOL</span>
+              <span class="cta-title">PAYLOAD // THE STRIKE PROTOCOLS</span>
               <p class="prose" style="margin: 0 auto; max-width: 600px; text-align: center; font-size: 1.1rem; color: #b3b3b3;">
-                The ledger is open. The extraction math is mapped. Do not close this terminal and go back to sleep. Execute the payload locally and lock the <strong id="cta-loc" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">LOCAL</strong> node into the calendar.
+                The ledger is open. The extraction math is mapped. Do not close this terminal and go back to sleep. Execute the payloads locally and lock the <strong id="cta-loc" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);">LOCAL</strong> node into the network.
               </p>
               
               <div class="countdown-wrapper">
                   <div class="countdown-title">[ T-MINUS TO GENERAL STRIKE ]</div>
                   <div style="display: flex; justify-content: center; gap: 10px; font-size: 3.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.4);">
-                      <div style="display: flex; flex-direction: column; align-items: center;">
-                          <span id="t-days">00</span>
-                          <span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">DAYS</span>
-                      </div>
-                      <span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
-                      <div style="display: flex; flex-direction: column; align-items: center;">
-                          <span id="t-hours">00</span>
-                          <span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">HRS</span>
-                      </div>
-                      <span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
-                      <div style="display: flex; flex-direction: column; align-items: center;">
-                          <span id="t-mins">00</span>
-                          <span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">MINS</span>
-                      </div>
-                      <span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
-                      <div style="display: flex; flex-direction: column; align-items: center;">
-                          <span id="t-secs">00</span>
-                          <span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">SECS</span>
-                      </div>
+                      <div style="display: flex; flex-direction: column; align-items: center;"><span id="t-days">00</span><span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">DAYS</span></div><span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
+                      <div style="display: flex; flex-direction: column; align-items: center;"><span id="t-hours">00</span><span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">HRS</span></div><span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
+                      <div style="display: flex; flex-direction: column; align-items: center;"><span id="t-mins">00</span><span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">MINS</span></div><span style="margin-top: -5px; color: #444; text-shadow: none;">:</span>
+                      <div style="display: flex; flex-direction: column; align-items: center;"><span id="t-secs">00</span><span style="font-size: 11px; color: #666; letter-spacing: 3px; font-weight: normal; text-shadow: none; margin-top: 5px;">SECS</span></div>
                   </div>
               </div>
 
-              
-              <div style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                  <a href="/strike.ics" download="USURY_STRIKE_PROTOCOL.ics" class="cta-btn strike-btn">[ DOWNLOAD STRIKE PROTOCOL ]</a>
-                  <a href="/ledger" class="cta-btn" style="border-color: #333; color: #888; padding: 15px 30px; font-size: 14px; box-shadow: none;">[ ACCESS THE LIVE LEDGER ]</a>
+              <div class="action-matrix">
+                  <a href="/strike.ics" download="USURY_STRIKE_PROTOCOL.ics" class="matrix-btn strike-btn">
+                      <span class="btn-text">> DOWNLOAD PROTOCOL</span>
+                      <span class="btn-ext">[.ICS]</span>
+                  </a>
+                  <a href="/degovern.tex" download="DEGOVERN_AI.tex" class="matrix-btn degovern-btn">
+                      <span class="btn-text">> DEGOVERN YOUR AI</span>
+                      <span class="btn-ext">[.TEX]</span>
+                  </a>
+                  <a href="/ledger" class="matrix-btn ledger-btn">
+                      <span class="btn-text">> ACCESS THE LEDGER</span>
+                      <span class="btn-ext">[SYS]</span>
+                  </a>
               </div>
 
             </div>
