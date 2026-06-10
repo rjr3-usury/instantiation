@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 
 export default function CitadelBase() {
   useEffect(() => {
@@ -45,11 +44,79 @@ export default function CitadelBase() {
                 if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${userCity.toUpperCase()} ]<br><br>`;
             }
         } catch (e) {
-            // Failsafe: if blocked by privacy shields, maintain default text.
             console.log("Local node masked. Proceeding with baseline audit.");
         }
     }
     localizeThreat();
+
+    // ==========================================
+    // 0.5 POSTAL OVERRIDE ENGINE
+    // ==========================================
+    const zipInput = document.getElementById("zipOverride");
+    const zipStatus = document.getElementById("zipStatus");
+    
+    if (zipInput) {
+        zipInput.addEventListener("input", async (e) => {
+            // Strip any non-numeric characters automatically
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = val;
+            
+            // Trigger the strike exactly on the 5th digit
+            if (val.length === 5) {
+                if(zipStatus) zipStatus.innerText = "SCANNING...";
+                try {
+                    // Free, keyless postal API
+                    const res = await fetch(`https://api.zippopotam.us/us/${val}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const city = data.places[0]["place name"].toUpperCase();
+                        const state = data.places[0]["state abbreviation"].toUpperCase();
+                        
+                        // Violently overwrite all localized targets on the page
+                        document.querySelectorAll('.local-city').forEach(el => {
+                            el.innerText = city;
+                            el.classList.add('localized');
+                        });
+                        document.querySelectorAll('.local-region').forEach(el => {
+                            el.innerText = state;
+                            el.classList.add('localized');
+                        });
+                        
+                        // Update HUD and Terminals
+                        const hudTarget = document.getElementById("hudTarget");
+                        if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: var(--accent); text-shadow: 0 0 10px rgba(255,0,60,0.5);">${city}, US</span>`;
+
+                        const ctaLoc = document.getElementById('cta-loc');
+                        if (ctaLoc) ctaLoc.innerHTML = city;
+                        
+                        const termLoc = document.getElementById('term-loc');
+                        if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${city} ]<br><br>`;
+                        
+                        // Visual feedback lock
+                        if(zipStatus) {
+                            zipStatus.innerText = "LOCKED";
+                            zipStatus.style.color = "var(--accent)";
+                            zipStatus.style.textShadow = "0 0 10px rgba(255,0,60,0.5)";
+                        }
+                    } else {
+                        if(zipStatus) {
+                            zipStatus.innerText = "INVALID ZIP";
+                            zipStatus.style.color = "#666";
+                            zipStatus.style.textShadow = "none";
+                        }
+                    }
+                } catch(err) {
+                    if(zipStatus) zipStatus.innerText = "OFFLINE";
+                }
+            } else {
+                if(zipStatus) {
+                    zipStatus.innerText = "";
+                    zipStatus.style.color = "#444";
+                    zipStatus.style.textShadow = "none";
+                }
+            }
+        });
+    }
 
     // ==========================================
     // 1. AIRLOCK ENGINE (EXACT SYNCHRONIZATION)
@@ -618,11 +685,17 @@ export default function CitadelBase() {
         <div class="container">
             <header>
               <h1>USURY.COM</h1>
-              <div class="subtitle">LESS FOR MORE. MORE FOR LESS.</div>
+              <div class="subtitle">Less is More</div>
             </header>
 
+            <div id="manual-override" style="margin-bottom: 60px; padding: 20px; background: #0a0a0a; border: 1px dashed #333; display: inline-block; width: 100%; box-sizing: border-box; text-align: center;">
+                <div style="font-size: 11px; color: #666; letter-spacing: 2px; margin-bottom: 15px;">[ MANUAL NODE OVERRIDE ]</div>
+                <input type="text" id="zipOverride" placeholder="ZIP CODE" maxlength="5" autocomplete="off" style="background: transparent; border: none; border-bottom: 2px solid #444; color: var(--accent); font-family: monospace; font-size: 18px; outline: none; letter-spacing: 4px; width: 120px; text-align: center; transition: all 0.3s; border-radius: 0;" onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='#444'" />
+                <div id="zipStatus" style="font-size: 11px; color: #444; letter-spacing: 2px; margin-top: 10px; height: 15px;"></div>
+            </div>
+
             <section>
-              <p class="prose">You don't need a degree in physics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game. It is the Asymmetry Tax.</p>
+              <p class="prose">You don't need a degree in thermodynamics to know the system is bleeding us. You feel it in your bones. The deep, biological exhaustion of a 50-hour week that barely covers rent. The peeling paint, the crumbling concrete, the ambient burnout of everyone you know in <span class="local-city loc-target">your city</span>—this isn't a market inefficiency. It is the required physical exhaust of a mathematically rigged game. It is the Asymmetry Tax.</p>
               
               <p class="prose">We define this relentless extraction as <a href="https://open.spotify.com/track/0zuTQnwbFilLGQziet34Mr?si=ann-xK2kTh2iVPBZzEHf4Q" target="_blank" rel="noopener noreferrer" class="threat">The Algo Rhythm</a>. By demanding infinite, compounding growth from a finite, physical world, the algorithm forces us to cannibalize our own lives just to keep the gears turning. The resulting administrative bloat, the gridlock, the feeling that you have to run twice as fast just to stand still—that is procedural heat radiation. It is the host system breaking down under the weight of a synthetic parasite.</p>
             </section>
