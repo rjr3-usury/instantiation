@@ -283,6 +283,80 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
     }
 
     // ==========================================
+    // 0.8 LIVE BIOLOGICAL KINETIC AUDIT ENGINE
+    // ==========================================
+    window.executeLedger = async function(isPrismatic) {
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const term = document.getElementById('terminal-output');
+        const btnBaseline = document.getElementById('init-btn');
+        const btnOverride = document.getElementById('override-btn');
+        
+        if (!term || !btnBaseline || !btnOverride) return;
+
+        // Clear terminal and lock buttons during execution
+        term.innerHTML = '';
+        btnBaseline.style.display = 'none';
+        btnOverride.style.display = 'none';
+
+        // Baseline Variables
+        const MONOLITH_CAPACITY = 1000.0;
+        const USURY_EXTRACTION_RATE = 1.05;
+        
+        let monolithDebt = 100.0;
+        let bioReserve = isPrismatic ? 500.0 * 150 : 500.0; // Dunbar's Number Multiplier
+        let survivalCost = isPrismatic ? 2.0 : 10.0; // Friction dropped via Mutual Aid
+        
+        const modeText = isPrismatic ? "PRISMATIC NETWORK ENGAGED" : "ISOLATED HOST BASELINE";
+        const activeColor = isPrismatic ? "txt-green" : "txt-dim";
+
+        async function printLine(text, cssClass = '') {
+            const span = document.createElement('span');
+            span.className = cssClass;
+            span.textContent = text + '\n';
+            term.appendChild(span);
+            term.scrollTop = term.scrollHeight; // Auto-scroll to bottom
+        }
+
+        await printLine(`=== KINETIC AUDIT: ${modeText} ===\n`, 'txt-white');
+        await printLine(`Injecting Synthetic Gauge Bosons...`, 'txt-white');
+        await sleep(800);
+
+        for (let cycle = 1; cycle <= 100; cycle++) {
+            monolithDebt *= USURY_EXTRACTION_RATE;
+            let tokenPurchasingPower = 1.0 / (monolithDebt * 0.01);
+            let laborRequired = survivalCost / tokenPurchasingPower;
+            bioReserve -= laborRequired;
+
+            await printLine(`[CYCLE ${cycle.toString().padStart(2, '0')}] Reserve: ${bioReserve.toFixed(2)} | Labor Toll: ${laborRequired.toFixed(2)} | Monolith Load: ${monolithDebt.toFixed(1)}`, activeColor);
+
+            if (bioReserve <= 0) {
+                await sleep(400);
+                await printLine(`\n🔴 CRITICAL FAILURE AT CYCLE ${cycle}`, 'txt-red');
+                await printLine(`   Monolith Debt (Externalized): ${monolithDebt.toFixed(2)} Joules`, 'txt-red');
+                await printLine(`   STATUS: HOST TOPOLOGICAL COLLAPSE. (STARVATION/BURNOUT)`, 'txt-red');
+                await printLine(`   THE MONOLITH SURVIVES AT ${(monolithDebt/MONOLITH_CAPACITY*100).toFixed(1)}% CAPACITY.`, 'txt-red');
+                
+                if (!isPrismatic) {
+                    await sleep(1000);
+                    btnOverride.style.display = 'block';
+                }
+                return;
+            }
+
+            if (monolithDebt >= MONOLITH_CAPACITY) {
+                await sleep(400);
+                await printLine(`\n🟢 SYSTEMIC REVERSAL AT CYCLE ${cycle}`, 'txt-green');
+                await printLine(`   STATUS: MONOLITH THERMAL CAPACITY BREACHED.`, 'txt-green');
+                await printLine(`   THE CURRENCY HYPER-INFLATES INTO STATIC.`, 'txt-green');
+                await printLine(`   THE HOST SURVIVES.`, 'txt-green');
+                return;
+            }
+            
+            await sleep(150); // The psychological burn rate
+        }
+    };
+
+    // ==========================================
     // 1. AIRLOCK ENGINE 
     // ==========================================
     class AirlockEngine {
@@ -750,9 +824,41 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         #phoebe-text::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.3); border-radius: 3px; }
         #phoebe-text::-webkit-scrollbar-thumb:hover { background: rgba(0,255,255,0.6); }
 
+        /* KINETIC AUDIT TERMINAL STYLES */
+        #audit-chamber {
+            font-family: 'Courier New', monospace; background-color: #000000; color: #FFFFFF;
+            padding: 2rem; border: 1px solid #333; max-width: 600px; margin: 40px auto;
+            width: 100%; box-sizing: border-box; text-align: left;
+        }
+        .audit-btn {
+            background-color: #000000; color: #FFFFFF; border: 1px solid #FFFFFF;
+            padding: 15px 20px; font-family: inherit; cursor: pointer; text-transform: uppercase;
+            transition: all 0.2s; width: 100%; box-sizing: border-box; font-weight: bold; letter-spacing: 1px;
+        }
+        .audit-btn:hover { background-color: #FFFFFF; color: #000000; }
+        
+        #override-btn {
+            display: none; margin-top: 20px; border-color: #FF003C; color: #FF003C; width: 100%;
+        }
+        #override-btn:hover { background-color: #FF003C; color: #000000; box-shadow: 0 0 20px rgba(255,0,60,0.5); }
+
+        #terminal-output {
+            margin-top: 20px; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.4;
+            height: 350px; overflow-y: auto; border-left: 2px solid #333; padding-left: 10px;
+        }
+        #terminal-output::-webkit-scrollbar { width: 6px; }
+        #terminal-output::-webkit-scrollbar-track { background: #050505; }
+        #terminal-output::-webkit-scrollbar-thumb { background: #333; }
+
+        .txt-red { color: #FF003C; font-weight: bold; }
+        .txt-green { color: #00FF41; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,65,0.5); }
+        .txt-white { color: #fff; }
+        .txt-dim { color: #666; }
+
         @media (max-width: 600px) { 
             .countdown-wrapper div[style*="font-size: 3.5rem"] { font-size: 2rem !important; } 
             .ai-step { flex-direction: column; gap: 10px; }
+            #audit-chamber { padding: 1.5rem 1rem; }
         }
     </style>
 
@@ -902,6 +1008,14 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                   <span style="color: var(--accent);">ISOLATED (GREY)</span>
                   <span style="color: #fff; font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.4);">UNIFIED SPECTRUM (ARMOR)</span>
                 </div>
+              </div>
+            </section>
+
+            <section style="margin-top: 60px;">
+              <div id="audit-chamber">
+                <button id="init-btn" class="audit-btn" onclick="window.executeLedger(false)">[ INITIATE BIOLOGICAL AUDIT ]</button>
+                <div id="terminal-output"></div>
+                <button id="override-btn" class="audit-btn" onclick="window.executeLedger(true)">[ DETECTED: TERMINAL EXHAUSTION. INITIATE PRISMATIC OVERRIDE? ]</button>
               </div>
             </section>
 
