@@ -51,17 +51,14 @@ export default function UsuryNode() {
     async function localizeThreat() {
         try {
             let data = null;
-            // Primary Node
             let response = await fetch('https://get.geojs.io/v1/ip/geo.json').catch(() => null);
             if (response && response.ok) {
                 data = await response.json();
             } else {
-                // Failover Node (Adblocker bypass)
                 response = await fetch('https://ipwho.is/').catch(() => null);
                 if (response && response.ok) data = await response.json();
             }
 
-            // Abort overwrite if user manually typed a ZIP code before API returned
             if (window.userLocOverridden) return;
 
             if (data && data.city) {
@@ -84,7 +81,7 @@ export default function UsuryNode() {
     const zipStatus = document.getElementById("zipStatus");
     
     const handleZipInput = async (e) => {
-        window.userLocOverridden = true; // Instantly lock out the auto-fetcher
+        window.userLocOverridden = true; 
         
         const val = e.target.value.replace(/[^0-9]/g, '');
         e.target.value = val;
@@ -298,6 +295,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         const term = document.getElementById('terminal-output');
         const btnBaseline = document.getElementById('init-btn');
         const btnOverride = document.getElementById('override-btn');
+        const dtChamber = document.getElementById('deep-time-chamber');
         
         if (!term || !btnBaseline || !btnOverride) return;
 
@@ -356,6 +354,14 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 await printLine(`   STATUS: MONOLITH THERMAL CAPACITY BREACHED.`, 'txt-green');
                 await printLine(`   THE CURRENCY HYPER-INFLATES INTO STATIC.`, 'txt-green');
                 await printLine(`   THE HOST SURVIVES.`, 'txt-green');
+                
+                // UNLOCK THE DEEP TIME CHAMBER REWARD
+                if (isPrismatic && dtChamber) {
+                    await sleep(1500);
+                    dtChamber.style.display = 'block';
+                    dtChamber.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
                 window.auditExecutionFlag = false;
                 return;
             }
@@ -366,7 +372,81 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
     };
 
     // ==========================================
-    // 1. AIRLOCK ENGINE (CLICK-TO-ADVANCE ENABLED)
+    // 0.9 DEEP TIME TRANSMISSION ENGINE
+    // ==========================================
+    window.deepTimeFlag = false;
+    window.executeDeepTime = async function() {
+        if (window.deepTimeFlag) return;
+        window.deepTimeFlag = true;
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const term = document.getElementById('deep-time-output');
+        const btn = document.getElementById('deep-time-btn');
+        
+        if (!term || !btn) return;
+        
+        term.innerHTML = '';
+        btn.style.display = 'none';
+
+        const GENERATIONS = 1000;
+        const T_NOISE = 0.15; 
+        
+        let bureaucraticFidelity = 100.0;
+        let institutionalEnergy = 5000.0;
+        let mythicFidelity = 100.0;
+        let monolithCollapsed = false;
+
+        async function printLineDT(text, cssClass = '') {
+            const span = document.createElement('span');
+            span.className = cssClass;
+            span.textContent = text + '\n';
+            term.appendChild(span);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        await printLineDT(`=== ERROR-CORRECTING TOPOLOGICAL CODES IN DEEP TIME ===\n`, 'txt-white');
+        await sleep(1000);
+        await printLineDT(`Tracking Administrative Abstraction vs. Mythic Archetype.`, 'txt-dim');
+        await printLineDT(`Ambient Noise Floor (T_NOISE): ${T_NOISE} (Severe historical friction)\n`, 'txt-dim');
+        await sleep(1000);
+
+        const milestones = [10, 50, 100, 250, 500, 750, 1000];
+
+        for (let gen = 1; gen <= GENERATIONS; gen++) {
+          institutionalEnergy -= (T_NOISE * bureaucraticFidelity);
+          
+          if (institutionalEnergy <= 0 && !monolithCollapsed) {
+            bureaucraticFidelity *= Math.exp(-T_NOISE * 10);
+            monolithCollapsed = true;
+            await sleep(500);
+            await printLineDT(`\n⚡️ [T_NOISE OVERWHELM] INSTITUTIONAL ENERGY DEPLETED AT GEN ${gen}`, 'txt-red');
+            await printLineDT(`   THE CARTESIAN GRID SHATTERS.`, 'txt-red');
+          } else if (monolithCollapsed) {
+            bureaucraticFidelity *= 0.8; 
+          }
+          
+          mythicFidelity *= 0.999; 
+
+          if (milestones.includes(gen)) {
+            await sleep(600); 
+            await printLineDT(`--- GENERATION ${gen.toString().padStart(4, '0')} ---`, 'txt-white');
+            
+            const bColor = bureaucraticFidelity > 10 ? 'txt-dim' : 'txt-red';
+            await printLineDT(`   Bureaucratic Fidelity: ${Math.max(0.0, bureaucraticFidelity).toFixed(2)}%`, bColor);
+            await printLineDT(`   Mythic Fidelity:       ${mythicFidelity.toFixed(2)}%\n`, 'txt-green');
+          }
+        }
+        
+        await sleep(1000);
+        await printLineDT(`\n[ AUDIT COMPLETE ]`, 'txt-white');
+        await printLineDT(`THE MONOLITH REQUIRES SERVERS. IT IS DEAD.`, 'txt-dim');
+        await printLineDT(`THE MYTH REQUIRES ONLY THE HOST. IT SURVIVES IN THE BLOOD.`, 'txt-green');
+        
+        window.deepTimeFlag = false;
+    };
+
+    // ==========================================
+    // 1. AIRLOCK ENGINE 
     // ==========================================
     class AirlockEngine {
         constructor() {
@@ -398,7 +478,6 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
             this.isTransitioning = false;
             this.canClick = false;
             
-            // Advance UI Cue
             this.hintTimeout = setTimeout(() => {
                 const trigger = document.getElementById('triggerPrompt');
                 if (trigger && this.injectionIndex < this.injections.length) {
@@ -411,9 +490,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 if (this.isTransitioning) return;
                 
                 if (this.injectionIndex < this.injections.length) {
-                    // Force the physics engine to inject text immediately
                     this.forcePulse = true;
-                    // Kinetic ripple
                     this.nodes.forEach(node => {
                         node.vx += (Math.random() - 0.5) * 4;
                         node.vy += (Math.random() - 0.5) * 4;
@@ -916,6 +993,21 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         #terminal-output::-webkit-scrollbar-track { background: #050505; }
         #terminal-output::-webkit-scrollbar-thumb { background: #333; }
 
+        /* DEEP TIME CHAMBER REWARD STYLES */
+        #deep-time-chamber {
+            font-family: 'Courier New', monospace; background-color: #000000; color: #FFFFFF;
+            padding: 2rem; border: 1px solid #00FF41; max-width: 600px; margin: 40px auto;
+            width: 100%; box-sizing: border-box; text-align: left; box-shadow: inset 0 0 20px rgba(0,255,65,0.05);
+        }
+        #deep-time-btn:hover { background-color: #00FF41 !important; color: #000 !important; box-shadow: 0 0 20px rgba(0,255,65,0.5); }
+        #deep-time-output {
+            margin-top: 20px; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.4;
+            height: 300px; overflow-y: auto; border-left: 2px solid #00FF41; padding-left: 10px;
+        }
+        #deep-time-output::-webkit-scrollbar { width: 6px; }
+        #deep-time-output::-webkit-scrollbar-track { background: #050505; }
+        #deep-time-output::-webkit-scrollbar-thumb { background: #00FF41; }
+
         .txt-red { color: #FF003C; font-weight: bold; }
         .txt-green { color: #00FF41; font-weight: bold; text-shadow: 0 0 5px rgba(0,255,65,0.5); }
         .txt-white { color: #fff; }
@@ -924,7 +1016,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         @media (max-width: 600px) { 
             .countdown-wrapper div[style*="font-size: 3.5rem"] { font-size: 2rem !important; } 
             .ai-step { flex-direction: column; gap: 10px; }
-            #audit-chamber { padding: 1.5rem 1rem; }
+            #audit-chamber, #deep-time-chamber { padding: 1.5rem 1rem; }
         }
     </style>
 
@@ -1082,6 +1174,11 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 <button id="init-btn" class="audit-btn" onclick="window.executeLedger(false)">[ INITIATE BIOLOGICAL AUDIT ]</button>
                 <div id="terminal-output"></div>
                 <button id="override-btn" class="audit-btn" onclick="window.executeLedger(true)">[ DETECTED: TERMINAL EXHAUSTION. INITIATE PRISMATIC OVERRIDE? ]</button>
+              </div>
+              
+              <div id="deep-time-chamber" style="display: none;">
+                <button id="deep-time-btn" class="audit-btn" onclick="window.executeDeepTime()" style="border-color: #00FF41; color: #00FF41;">[ INITIATE DEEP TIME TRANSMISSION ]</button>
+                <div id="deep-time-output"></div>
               </div>
             </section>
 
