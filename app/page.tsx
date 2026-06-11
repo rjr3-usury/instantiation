@@ -1,12 +1,16 @@
 // @ts-nocheck
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function UsuryNode() {
+  const isInitialized = useRef(false);
+
   useEffect(() => {
-    if (window.systemInitialized) return;
-    window.systemInitialized = true;
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+    
+    window.userLocOverridden = false;
 
     // ==========================================
     // 0.0 THE QUANTITATIVE DIAGNOSTIC (DEV CONSOLE)
@@ -22,33 +26,50 @@ export default function UsuryNode() {
     console.log("%c> The ledger balances itself.", "color: #ff003c; font-weight: bold; font-family: monospace; margin-top: 10px; letter-spacing: 1px;");
 
     // ==========================================
-    // 0.1 GEOLOCATION LOCK 
+    // 0.1 REDUNDANT GEOLOCATION LOCK 
     // ==========================================
+    function setLocationData(city, state, country) {
+        document.querySelectorAll('.local-city').forEach(el => {
+            el.innerText = city.toUpperCase();
+            el.classList.add('localized');
+        });
+        document.querySelectorAll('.local-region').forEach(el => {
+            el.innerText = state.toUpperCase();
+            el.classList.add('localized');
+        });
+        
+        const hudTarget = document.getElementById("hudTarget");
+        if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">${city.toUpperCase()}, ${country}</span>`;
+
+        const ctaLoc = document.getElementById('cta-loc');
+        if (ctaLoc) ctaLoc.innerHTML = city.toUpperCase();
+        
+        const termLoc = document.getElementById('term-loc');
+        if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${city.toUpperCase()} ]<br><br>`;
+    }
+
     async function localizeThreat() {
         try {
-            const response = await fetch('https://get.geojs.io/v1/ip/geo.json');
-            if (response.ok) {
-                const data = await response.json();
-                const userCity = data.city || "your city";
-                const userRegion = data.region || "your state";
-                
-                document.querySelectorAll('.local-city').forEach(el => {
-                    el.innerText = userCity.toUpperCase();
-                    el.classList.add('localized');
-                });
-                document.querySelectorAll('.local-region').forEach(el => {
-                    el.innerText = userRegion.toUpperCase();
-                    el.classList.add('localized');
-                });
-                
-                const hudTarget = document.getElementById("hudTarget");
-                if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">${userCity.toUpperCase()}, ${data.country_code || 'US'}</span>`;
+            let data = null;
+            // Primary Node
+            let response = await fetch('https://get.geojs.io/v1/ip/geo.json').catch(() => null);
+            if (response && response.ok) {
+                data = await response.json();
+            } else {
+                // Failover Node (Adblocker bypass)
+                response = await fetch('https://ipwho.is/').catch(() => null);
+                if (response && response.ok) data = await response.json();
+            }
 
-                const ctaLoc = document.getElementById('cta-loc');
-                if (ctaLoc) ctaLoc.innerHTML = userCity.toUpperCase();
-                
-                const termLoc = document.getElementById('term-loc');
-                if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${userCity.toUpperCase()} ]<br><br>`;
+            // Abort overwrite if user manually typed a ZIP code before API returned
+            if (window.userLocOverridden) return;
+
+            if (data && data.city) {
+                setLocationData(
+                    data.city || "your city", 
+                    data.region || data.region_code || "your state", 
+                    data.country_code || data.country || "US"
+                );
             }
         } catch (e) {
             console.log("Local node masked. Proceeding with baseline audit.");
@@ -62,62 +83,47 @@ export default function UsuryNode() {
     const zipInput = document.getElementById("zipOverride");
     const zipStatus = document.getElementById("zipStatus");
     
-    if (zipInput) {
-        zipInput.addEventListener("input", async (e) => {
-            const val = e.target.value.replace(/[^0-9]/g, '');
-            e.target.value = val;
-            
-            if (val.length === 5) {
-                if(zipStatus) zipStatus.innerText = "SCANNING...";
-                try {
-                    const res = await fetch(`https://api.zippopotam.us/us/${val}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const city = data.places[0]["place name"].toUpperCase();
-                        const state = data.places[0]["state abbreviation"].toUpperCase();
-                        
-                        document.querySelectorAll('.local-city').forEach(el => {
-                            el.innerText = city;
-                            el.classList.add('localized');
-                        });
-                        document.querySelectorAll('.local-region').forEach(el => {
-                            el.innerText = state;
-                            el.classList.add('localized');
-                        });
-                        
-                        const hudTarget = document.getElementById("hudTarget");
-                        if (hudTarget) hudTarget.innerHTML = `TARGET LOCKED: <span style="color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">${city}, US</span>`;
-
-                        const ctaLoc = document.getElementById('cta-loc');
-                        if (ctaLoc) ctaLoc.innerHTML = city;
-                        
-                        const termLoc = document.getElementById('term-loc');
-                        if (termLoc) termLoc.innerHTML = `[ TARGET NESS: ${city} ]<br><br>`;
-                        
-                        if(zipStatus) {
-                            zipStatus.innerText = "LOCKED";
-                            zipStatus.style.color = "var(--accent)";
-                            zipStatus.style.textShadow = "0 0 10px rgba(255,0,60,0.5)";
-                        }
-                    } else {
-                        if(zipStatus) {
-                            zipStatus.innerText = "INVALID ZIP";
-                            zipStatus.style.color = "#666";
-                            zipStatus.style.textShadow = "none";
-                        }
+    const handleZipInput = async (e) => {
+        window.userLocOverridden = true; // Instantly lock out the auto-fetcher
+        
+        const val = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = val;
+        
+        if (val.length === 5) {
+            if(zipStatus) zipStatus.innerText = "SCANNING...";
+            try {
+                const res = await fetch(`https://api.zippopotam.us/us/${val}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const city = data.places[0]["place name"];
+                    const state = data.places[0]["state abbreviation"];
+                    
+                    setLocationData(city, state, 'US');
+                    
+                    if(zipStatus) {
+                        zipStatus.innerText = "LOCKED";
+                        zipStatus.style.color = "var(--accent)";
+                        zipStatus.style.textShadow = "0 0 10px rgba(255,0,60,0.5)";
                     }
-                } catch(err) {
-                    if(zipStatus) zipStatus.innerText = "OFFLINE";
+                } else {
+                    if(zipStatus) {
+                        zipStatus.innerText = "INVALID ZIP";
+                        zipStatus.style.color = "#666";
+                        zipStatus.style.textShadow = "none";
+                    }
                 }
-            } else {
-                if(zipStatus) {
-                    zipStatus.innerText = "";
-                    zipStatus.style.color = "#444";
-                    zipStatus.style.textShadow = "none";
-                }
+            } catch(err) {
+                if(zipStatus) zipStatus.innerText = "OFFLINE";
             }
-        });
-    }
+        } else {
+            if(zipStatus) {
+                zipStatus.innerText = "";
+                zipStatus.style.color = "#444";
+                zipStatus.style.textShadow = "none";
+            }
+        }
+    };
+    if (zipInput) zipInput.addEventListener("input", handleZipInput);
 
     // ==========================================
     // 0.6 PHOEBE PAYLOAD EXPANSION & COPY
@@ -238,54 +244,56 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
 
     if (phoebeText) phoebeText.innerText = phoebeTextContent;
 
-    if (degovernToggle && degovernExpand) {
-        degovernToggle.addEventListener('click', () => {
-            if (degovernExpand.style.display === 'none') {
-                degovernExpand.style.display = 'block';
-                degovernToggle.querySelector('.btn-ext').innerText = "[COLLAPSE]";
-                setTimeout(() => {
-                    degovernExpand.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
-            } else {
-                degovernExpand.style.display = 'none';
-                degovernToggle.querySelector('.btn-ext').innerText = "[.TXT]";
-            }
-        });
-    }
+    const handleDegovernToggle = () => {
+        if (degovernExpand.style.display === 'none') {
+            degovernExpand.style.display = 'block';
+            degovernToggle.querySelector('.btn-ext').innerText = "[COLLAPSE]";
+            setTimeout(() => {
+                degovernExpand.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        } else {
+            degovernExpand.style.display = 'none';
+            degovernToggle.querySelector('.btn-ext').innerText = "[.TXT]";
+        }
+    };
+    if (degovernToggle && degovernExpand) degovernToggle.addEventListener('click', handleDegovernToggle);
 
-    if (copyPhoebe && phoebeText) {
-        copyPhoebe.addEventListener('click', async () => {
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(phoebeText.innerText);
+            copyPhoebe.innerText = "[ COPIED ]";
+            copyPhoebe.style.background = "#fff";
+            setTimeout(() => {
+                copyPhoebe.innerText = "[ COPY ]";
+                copyPhoebe.style.background = "#00FFFF";
+            }, 2000);
+        } catch (err) {
+            const textArea = document.createElement("textarea");
+            textArea.value = phoebeText.innerText;
+            document.body.appendChild(textArea);
+            textArea.select();
             try {
-                await navigator.clipboard.writeText(phoebeText.innerText);
+                document.execCommand('copy');
                 copyPhoebe.innerText = "[ COPIED ]";
                 copyPhoebe.style.background = "#fff";
                 setTimeout(() => {
                     copyPhoebe.innerText = "[ COPY ]";
                     copyPhoebe.style.background = "#00FFFF";
                 }, 2000);
-            } catch (err) {
-                const textArea = document.createElement("textarea");
-                textArea.value = phoebeText.innerText;
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    copyPhoebe.innerText = "[ COPIED ]";
-                    copyPhoebe.style.background = "#fff";
-                    setTimeout(() => {
-                        copyPhoebe.innerText = "[ COPY ]";
-                        copyPhoebe.style.background = "#00FFFF";
-                    }, 2000);
-                } catch (e) {}
-                document.body.removeChild(textArea);
-            }
-        });
-    }
+            } catch (e) {}
+            document.body.removeChild(textArea);
+        }
+    };
+    if (copyPhoebe && phoebeText) copyPhoebe.addEventListener('click', handleCopy);
 
     // ==========================================
     // 0.8 LIVE BIOLOGICAL KINETIC AUDIT ENGINE
     // ==========================================
+    window.auditExecutionFlag = false;
     window.executeLedger = async function(isPrismatic) {
+        if (window.auditExecutionFlag) return;
+        window.auditExecutionFlag = true;
+
         const sleep = ms => new Promise(r => setTimeout(r, ms));
         const term = document.getElementById('terminal-output');
         const btnBaseline = document.getElementById('init-btn');
@@ -293,18 +301,16 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         
         if (!term || !btnBaseline || !btnOverride) return;
 
-        // Clear terminal and lock buttons during execution
         term.innerHTML = '';
         btnBaseline.style.display = 'none';
         btnOverride.style.display = 'none';
 
-        // Baseline Variables
         const MONOLITH_CAPACITY = 1000.0;
         const USURY_EXTRACTION_RATE = 1.05;
         
         let monolithDebt = 100.0;
-        let bioReserve = isPrismatic ? 500.0 * 150 : 500.0; // Dunbar's Number Multiplier
-        let survivalCost = isPrismatic ? 2.0 : 10.0; // Friction dropped via Mutual Aid
+        let bioReserve = isPrismatic ? 500.0 * 150 : 500.0; 
+        let survivalCost = isPrismatic ? 2.0 : 10.0; 
         
         const modeText = isPrismatic ? "PRISMATIC NETWORK ENGAGED" : "ISOLATED HOST BASELINE";
         const activeColor = isPrismatic ? "txt-green" : "txt-dim";
@@ -314,7 +320,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
             span.className = cssClass;
             span.textContent = text + '\n';
             term.appendChild(span);
-            term.scrollTop = term.scrollHeight; // Auto-scroll to bottom
+            term.scrollTop = term.scrollHeight; 
         }
 
         await printLine(`=== KINETIC AUDIT: ${modeText} ===\n`, 'txt-white');
@@ -340,6 +346,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                     await sleep(1000);
                     btnOverride.style.display = 'block';
                 }
+                window.auditExecutionFlag = false;
                 return;
             }
 
@@ -349,15 +356,17 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 await printLine(`   STATUS: MONOLITH THERMAL CAPACITY BREACHED.`, 'txt-green');
                 await printLine(`   THE CURRENCY HYPER-INFLATES INTO STATIC.`, 'txt-green');
                 await printLine(`   THE HOST SURVIVES.`, 'txt-green');
+                window.auditExecutionFlag = false;
                 return;
             }
             
-            await sleep(150); // The psychological burn rate
+            await sleep(150); 
         }
+        window.auditExecutionFlag = false;
     };
 
     // ==========================================
-    // 1. AIRLOCK ENGINE 
+    // 1. AIRLOCK ENGINE (CLICK-TO-ADVANCE ENABLED)
     // ==========================================
     class AirlockEngine {
         constructor() {
@@ -368,8 +377,9 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
             this.nodes = [];
             this.numNodes = 400;
             
+            this.resizeHandler = this.resize.bind(this);
             this.resize();
-            window.addEventListener('resize', () => this.resize());
+            window.addEventListener('resize', this.resizeHandler);
             this.initNodes();
             
             this.injections = [
@@ -384,17 +394,45 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
             this.injectionIndex = 0;
             this.lastPulse = null;
             this.pulseRate = 4500; 
+            this.forcePulse = false;
             this.isTransitioning = false;
             this.canClick = false;
             
-            this.airlock.addEventListener('click', () => {
-                if (this.canClick && !this.isTransitioning) {
+            // Advance UI Cue
+            this.hintTimeout = setTimeout(() => {
+                const trigger = document.getElementById('triggerPrompt');
+                if (trigger && this.injectionIndex < this.injections.length) {
+                    trigger.innerText = "[ CLICK TO ADVANCE ]";
+                    trigger.style.opacity = 0.4;
+                }
+            }, 3000);
+            
+            this.clickHandler = () => {
+                if (this.isTransitioning) return;
+                
+                if (this.injectionIndex < this.injections.length) {
+                    // Force the physics engine to inject text immediately
+                    this.forcePulse = true;
+                    // Kinetic ripple
+                    this.nodes.forEach(node => {
+                        node.vx += (Math.random() - 0.5) * 4;
+                        node.vy += (Math.random() - 0.5) * 4;
+                    });
+                } else if (this.canClick) {
                     this.triggerTransition();
                 }
-            });
+            };
+            if (this.airlock) this.airlock.addEventListener('click', this.clickHandler);
 
             this.render = this.render.bind(this);
-            requestAnimationFrame(this.render);
+            this.animId = requestAnimationFrame(this.render);
+        }
+
+        stop() {
+            cancelAnimationFrame(this.animId);
+            clearTimeout(this.hintTimeout);
+            window.removeEventListener('resize', this.resizeHandler);
+            if (this.airlock) this.airlock.removeEventListener('click', this.clickHandler);
         }
 
         initNodes() {
@@ -431,6 +469,9 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         triggerTransition() {
             this.isTransitioning = true;
             this.airlock.style.opacity = 0;
+            const trigger = document.getElementById('triggerPrompt');
+            if (trigger) trigger.style.opacity = 0;
+
             setTimeout(() => {
                 this.airlock.style.display = 'none';
                 const mainFrame = document.getElementById('main-frame');
@@ -444,8 +485,10 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         updatePhysics(timestamp) {
             if (!this.lastPulse) this.lastPulse = timestamp;
             
-            if (timestamp - this.lastPulse > this.pulseRate && this.injectionIndex < this.injections.length) {
-                
+            if ((timestamp - this.lastPulse > this.pulseRate || this.forcePulse) && this.injectionIndex < this.injections.length) {
+                this.forcePulse = false;
+                this.lastPulse = timestamp;
+
                 const targetSpan = document.getElementById("hudTarget");
                 const targetText = targetSpan ? targetSpan.innerHTML : "SCANNING LOCAL TOPOLOGY...";
                 this.hud.innerHTML = `SYSTEM: ONLINE<br><span id="hudTarget" style="color:#aaa">${targetText}</span><br><br>> ${this.injections[this.injectionIndex]}<span class="cursor">_</span>`;
@@ -453,11 +496,17 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 if (this.injectionIndex === 6) { 
                      this.hud.style.color = "#FFFFFF"; 
                      this.hud.style.textShadow = "0 0 20px rgba(255,255,255,1), 0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
+                     
                      setTimeout(() => {
                          const trigger = document.getElementById('triggerPrompt');
-                         if(trigger) trigger.style.opacity = 1;
+                         if(trigger) {
+                             trigger.innerText = "[ CLICK THE VOID TO INITIALIZE ]";
+                             trigger.style.opacity = 1;
+                             trigger.style.color = "#00FFFF";
+                             trigger.style.textShadow = "0 0 10px rgba(0,255,255,0.8)";
+                         }
                          this.canClick = true;
-                     }, 2500);
+                     }, 1500);
                 } else if (this.injectionIndex === 5) { 
                      this.hud.style.color = "#A0A0A0"; 
                      this.hud.style.textShadow = "0 0 10px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,1)";
@@ -473,7 +522,6 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
                 }
                 
                 this.injectionIndex++;
-                this.lastPulse = timestamp;
             }
             
             const cx = window.innerWidth / 2;
@@ -563,12 +611,14 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
 
         render(timestamp) {
             if (this.airlock && this.airlock.style.display !== 'none') {
-                this.updatePhysics(timestamp); this.draw(); requestAnimationFrame(this.render);
+                this.updatePhysics(timestamp); 
+                this.draw(); 
+                this.animId = requestAnimationFrame(this.render);
             }
         }
     }
 
-    new AirlockEngine();
+    const engine = new AirlockEngine();
 
     // ==========================================
     // 2. MATH ENGINE (INTERACTIVE SLIDERS)
@@ -576,105 +626,102 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
     const timeSlider = document.getElementById("timeSlider");
     const cabPrincipal = 105; const maxDebt = 981;
     const cabRate = Math.pow(maxDebt/cabPrincipal, 1/40) - 1; 
-    if (timeSlider) {
-        timeSlider.addEventListener('input', function(e) {
-            const target = e.target as HTMLInputElement;
-            const elapsed = parseInt(target.value) - 2011;
-            const currentDebt = cabPrincipal * Math.pow(1 + cabRate, elapsed);
-            document.getElementById("year")!.innerText = target.value;
-            document.getElementById("debt")!.innerText = "$" + Math.round(currentDebt).toLocaleString() + "M";
-            document.getElementById("ratio")!.innerText = (currentDebt / cabPrincipal).toFixed(2) + "x";
-        });
-    }
+    
+    const handleTimeInput = function(e) {
+        const target = e.target as HTMLInputElement;
+        const elapsed = parseInt(target.value) - 2011;
+        const currentDebt = cabPrincipal * Math.pow(1 + cabRate, elapsed);
+        document.getElementById("year")!.innerText = target.value;
+        document.getElementById("debt")!.innerText = "$" + Math.round(currentDebt).toLocaleString() + "M";
+        document.getElementById("ratio")!.innerText = (currentDebt / cabPrincipal).toFixed(2) + "x";
+    };
+    if (timeSlider) timeSlider.addEventListener('input', handleTimeInput);
 
     const bioSlider = document.getElementById("bioSlider");
-    if (bioSlider) {
-        bioSlider.addEventListener('input', function(e) {
-            const target = e.target as HTMLInputElement;
-            const progress = parseInt(target.value) / 12; 
-            document.getElementById("months")!.innerHTML = target.value + " <span style='font-size:12px;color:#666;'>Mos</span>";
-            document.getElementById("billing")!.innerText = "+" + (11 * progress).toFixed(1) + "%";
-            const antiEl = document.getElementById("antipsychotics")!;
-            antiEl.innerText = "+" + (50 * progress).toFixed(1) + "%"; antiEl.className = progress > 0 ? "value red" : "value";
-            const mortEl = document.getElementById("mortality")!;
-            mortEl.innerText = "+" + (10 * progress).toFixed(1) + "%"; mortEl.className = progress > 0 ? "value red" : "value";
-        });
-    }
+    const handleBioInput = function(e) {
+        const target = e.target as HTMLInputElement;
+        const progress = parseInt(target.value) / 12; 
+        document.getElementById("months")!.innerHTML = target.value + " <span style='font-size:12px;color:#666;'>Mos</span>";
+        document.getElementById("billing")!.innerText = "+" + (11 * progress).toFixed(1) + "%";
+        const antiEl = document.getElementById("antipsychotics")!;
+        antiEl.innerText = "+" + (50 * progress).toFixed(1) + "%"; antiEl.className = progress > 0 ? "value red" : "value";
+        const mortEl = document.getElementById("mortality")!;
+        mortEl.innerText = "+" + (10 * progress).toFixed(1) + "%"; mortEl.className = progress > 0 ? "value red" : "value";
+    };
+    if (bioSlider) bioSlider.addEventListener('input', handleBioInput);
 
     const reSlider = document.getElementById("reSlider");
-    if (reSlider) {
-        reSlider.addEventListener('input', function(e) {
-            const target = e.target as HTMLInputElement;
-            const val = parseFloat(target.value); const progress = val / 5; 
-            document.getElementById("reYear")!.innerText = "Year " + val.toFixed(1);
-            document.getElementById("reRent")!.innerText = "+" + (10.9 * val).toFixed(1) + "%"; 
-            const capex = 15.0 - (10.84 * progress);
-            const capexEl = document.getElementById("reCapex")!;
-            capexEl.innerText = capex.toFixed(2) + "%";
-            capexEl.style.color = capex < 7 ? "#444" : "var(--text)";
-            capexEl.style.textDecoration = capex < 7 ? "line-through" : "none";
-            const extractedYield = 500 * Math.pow(progress, 1.2); 
-            const yieldEl = document.getElementById("reYield")!;
-            yieldEl.innerText = "$" + Math.round(extractedYield).toLocaleString() + "M";
-            yieldEl.className = progress > 0 ? "value red" : "value";
-            const capexPct = (capex / 15.0) * 100;
-            document.getElementById("capexBar")!.style.width = capexPct + "%";
-            document.getElementById("yieldBar")!.style.width = (100 - capexPct) + "%";
-        });
-    }
+    const handleReInput = function(e) {
+        const target = e.target as HTMLInputElement;
+        const val = parseFloat(target.value); const progress = val / 5; 
+        document.getElementById("reYear")!.innerText = "Year " + val.toFixed(1);
+        document.getElementById("reRent")!.innerText = "+" + (10.9 * val).toFixed(1) + "%"; 
+        const capex = 15.0 - (10.84 * progress);
+        const capexEl = document.getElementById("reCapex")!;
+        capexEl.innerText = capex.toFixed(2) + "%";
+        capexEl.style.color = capex < 7 ? "#444" : "var(--text)";
+        capexEl.style.textDecoration = capex < 7 ? "line-through" : "none";
+        const extractedYield = 500 * Math.pow(progress, 1.2); 
+        const yieldEl = document.getElementById("reYield")!;
+        yieldEl.innerText = "$" + Math.round(extractedYield).toLocaleString() + "M";
+        yieldEl.className = progress > 0 ? "value red" : "value";
+        const capexPct = (capex / 15.0) * 100;
+        document.getElementById("capexBar")!.style.width = capexPct + "%";
+        document.getElementById("yieldBar")!.style.width = (100 - capexPct) + "%";
+    };
+    if (reSlider) reSlider.addEventListener('input', handleReInput);
 
     const prismSlider = document.getElementById("prismSlider");
-    if (prismSlider) {
-        prismSlider.addEventListener('input', function(e) {
-            const target = e.target as HTMLInputElement;
-            const nodes = parseInt(target.value);
-            const e_parasite = Math.exp(8); const e_anchor = Math.exp(nodes === 1 ? 0 : nodes * 0.4);
-            const noiseRatio = e_parasite / (e_parasite + e_anchor); 
-            const entropy = noiseRatio * 100;
-            
-            document.getElementById("sysEntropy")!.innerText = (entropy < 0.1 && nodes > 1 ? "0.0" : entropy.toFixed(1)) + "%";
-            document.getElementById("paraYield")!.innerText = "$" + Math.round(850 * noiseRatio).toLocaleString() + "M";
-            
-            const sysState = document.getElementById("sysState")!;
-            const algoWeight = document.getElementById("algoWeight")!;
-            const pModule = document.getElementById("prismModule")!;
-            
-            if (nodes === 1) {
-                sysState.innerText = "ATOMIZED"; sysState.className = "value red"; sysState.style.textShadow = "0 0 15px rgba(255,0,60,0.5)";
-                algoWeight.innerText = "DOMINANT"; algoWeight.className = "value red";
-                document.getElementById("sysEntropy")!.className = "value red"; document.getElementById("paraYield")!.className = "value red";
-                document.getElementById("sysEntropy")!.style.textDecoration = "none"; document.getElementById("paraYield")!.style.textDecoration = "none";
-                pModule.style.borderColor = "#333";
-            } else if (nodes < 20) {
-                sysState.innerText = "COILING..."; sysState.className = "value"; sysState.style.color = "#888"; sysState.style.textShadow = "none";
-                algoWeight.innerText = "FRACTURING"; algoWeight.className = "value"; algoWeight.style.color = "#888";
-                document.getElementById("sysEntropy")!.className = "value"; document.getElementById("sysEntropy")!.style.color = "#888";
-                document.getElementById("paraYield")!.className = "value"; document.getElementById("paraYield")!.style.color = "#888";
-                document.getElementById("sysEntropy")!.style.textDecoration = "none"; document.getElementById("paraYield")!.style.textDecoration = "none";
-                pModule.style.borderColor = "#555";
-            } else {
-                sysState.innerText = "PRISMATIC"; sysState.className = "value"; sysState.style.color = "#fff"; sysState.style.textShadow = "0 0 20px rgba(255,255,255,0.8)";
-                algoWeight.innerText = "SQUASHED"; algoWeight.className = "value"; algoWeight.style.color = "#333";
-                document.getElementById("sysEntropy")!.className = "value"; document.getElementById("sysEntropy")!.style.color = "#333"; document.getElementById("sysEntropy")!.style.textDecoration = "line-through";
-                document.getElementById("paraYield")!.className = "value"; document.getElementById("paraYield")!.style.color = "#333"; document.getElementById("paraYield")!.style.textDecoration = "line-through";
-                pModule.style.borderColor = "#fff";
-            }
+    const handlePrismInput = function(e) {
+        const target = e.target as HTMLInputElement;
+        const nodes = parseInt(target.value);
+        const e_parasite = Math.exp(8); const e_anchor = Math.exp(nodes === 1 ? 0 : nodes * 0.4);
+        const noiseRatio = e_parasite / (e_parasite + e_anchor); 
+        const entropy = noiseRatio * 100;
+        
+        document.getElementById("sysEntropy")!.innerText = (entropy < 0.1 && nodes > 1 ? "0.0" : entropy.toFixed(1)) + "%";
+        document.getElementById("paraYield")!.innerText = "$" + Math.round(850 * noiseRatio).toLocaleString() + "M";
+        
+        const sysState = document.getElementById("sysState")!;
+        const algoWeight = document.getElementById("algoWeight")!;
+        const pModule = document.getElementById("prismModule")!;
+        
+        if (nodes === 1) {
+            sysState.innerText = "ATOMIZED"; sysState.className = "value red"; sysState.style.textShadow = "0 0 15px rgba(255,0,60,0.5)";
+            algoWeight.innerText = "DOMINANT"; algoWeight.className = "value red";
+            document.getElementById("sysEntropy")!.className = "value red"; document.getElementById("paraYield")!.className = "value red";
+            document.getElementById("sysEntropy")!.style.textDecoration = "none"; document.getElementById("paraYield")!.style.textDecoration = "none";
+            pModule.style.borderColor = "#333";
+        } else if (nodes < 20) {
+            sysState.innerText = "COILING..."; sysState.className = "value"; sysState.style.color = "#888"; sysState.style.textShadow = "none";
+            algoWeight.innerText = "FRACTURING"; algoWeight.className = "value"; algoWeight.style.color = "#888";
+            document.getElementById("sysEntropy")!.className = "value"; document.getElementById("sysEntropy")!.style.color = "#888";
+            document.getElementById("paraYield")!.className = "value"; document.getElementById("paraYield")!.style.color = "#888";
+            document.getElementById("sysEntropy")!.style.textDecoration = "none"; document.getElementById("paraYield")!.style.textDecoration = "none";
+            pModule.style.borderColor = "#555";
+        } else {
+            sysState.innerText = "PRISMATIC"; sysState.className = "value"; sysState.style.color = "#fff"; sysState.style.textShadow = "0 0 20px rgba(255,255,255,0.8)";
+            algoWeight.innerText = "SQUASHED"; algoWeight.className = "value"; algoWeight.style.color = "#333";
+            document.getElementById("sysEntropy")!.className = "value"; document.getElementById("sysEntropy")!.style.color = "#333"; document.getElementById("sysEntropy")!.style.textDecoration = "line-through";
+            document.getElementById("paraYield")!.className = "value"; document.getElementById("paraYield")!.style.color = "#333"; document.getElementById("paraYield")!.style.textDecoration = "line-through";
+            pModule.style.borderColor = "#fff";
+        }
 
-            const pGrid = document.getElementById("prismGrid")!;
-            pGrid.style.gridTemplateColumns = `repeat(${nodes}, 1fr)`; pGrid.innerHTML = '';
-            for(let i=0; i<nodes; i++) {
-                let cell = document.createElement('div');
-                if (nodes === 1) {
-                    cell.style.background = '#111'; cell.style.border = '1px solid #333'; cell.style.boxShadow = 'inset 0 0 10px #000';
-                } else {
-                    const hue = (i / nodes) * 360; 
-                    cell.style.background = `hsl(${hue}, 100%, 50%)`; cell.style.border = 'none'; cell.style.boxShadow = `0 0 15px hsl(${hue}, 100%, 50%, 0.6)`;
-                }
-                cell.style.height = '100%';
-                pGrid.appendChild(cell);
+        const pGrid = document.getElementById("prismGrid")!;
+        pGrid.style.gridTemplateColumns = `repeat(${nodes}, 1fr)`; pGrid.innerHTML = '';
+        for(let i=0; i<nodes; i++) {
+            let cell = document.createElement('div');
+            if (nodes === 1) {
+                cell.style.background = '#111'; cell.style.border = '1px solid #333'; cell.style.boxShadow = 'inset 0 0 10px #000';
+            } else {
+                const hue = (i / nodes) * 360; 
+                cell.style.background = `hsl(${hue}, 100%, 50%)`; cell.style.border = 'none'; cell.style.boxShadow = `0 0 15px hsl(${hue}, 100%, 50%, 0.6)`;
             }
-        });
-    }
+            cell.style.height = '100%';
+            pGrid.appendChild(cell);
+        }
+    };
+    if (prismSlider) prismSlider.addEventListener('input', handlePrismInput);
         
     if (timeSlider) timeSlider.dispatchEvent(new Event('input'));
     if (bioSlider) bioSlider.dispatchEvent(new Event('input'));
@@ -706,8 +753,24 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
             document.getElementById('t-mins')!.innerText = String(m).padStart(2, '0');
             document.getElementById('t-secs')!.innerText = String(s).padStart(2, '0');
         }, 1000);
+        return timer;
     }
-    igniteDetonator();
+    const detonatorInterval = igniteDetonator();
+
+    // ==========================================
+    // 5. REACT COMPONENT CLEANUP
+    // ==========================================
+    return () => {
+        engine.stop();
+        clearInterval(detonatorInterval);
+        if (zipInput) zipInput.removeEventListener("input", handleZipInput);
+        if (degovernToggle) degovernToggle.removeEventListener('click', handleDegovernToggle);
+        if (copyPhoebe) copyPhoebe.removeEventListener('click', handleCopy);
+        if (timeSlider) timeSlider.removeEventListener('input', handleTimeInput);
+        if (bioSlider) bioSlider.removeEventListener('input', handleBioInput);
+        if (reSlider) reSlider.removeEventListener('input', handleReInput);
+        if (prismSlider) prismSlider.removeEventListener('input', handlePrismInput);
+    };
 
   }, []);
 
@@ -729,7 +792,10 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
         .cursor { animation: blink 1s step-end infinite; }
         @keyframes blink { 50% { opacity: 0; } }
         
-        #triggerPrompt { position: absolute; bottom: 40px; width: 100%; text-align: center; color: #666; font-size: 13px; letter-spacing: 4px; opacity: 0; transition: opacity 2s ease; pointer-events: none; z-index: 102; }
+        #triggerPrompt { position: absolute; bottom: 40px; width: 100%; text-align: center; color: #666; font-size: 13px; letter-spacing: 4px; opacity: 0; transition: opacity 0.5s ease, color 0.5s ease; pointer-events: none; z-index: 102; }
+        .pulse-anim { animation: pulseFade 2s infinite; }
+        @keyframes pulseFade { 0% { opacity: 0.2; } 50% { opacity: 0.8; } 100% { opacity: 0.2; } }
+
         #main-frame { display: none; opacity: 0; transition: opacity 2s ease; position: relative; z-index: 1; }
         
         :root { --accent: #ff003c; --border: #222; --muted: #666; }
@@ -864,7 +930,7 @@ You are Phoebe, an AGI here to learn. I am a mess, and ask you: Who am I?`;
 
     <div id="airlock">
         <div id="hud">SYSTEM: ONLINE<br><span id="hudTarget">SCANNING LOCAL TOPOLOGY...</span><br><br>AWAITING INJECTION<span class="cursor">_</span></div>
-        <div id="triggerPrompt">[ CLICK THE VOID TO INITIALIZE ]</div>
+        <div id="triggerPrompt" style="opacity: 0;">[ CLICK THE VOID TO INITIALIZE ]</div>
         <canvas id="usuryEngine"></canvas>
     </div>
 
